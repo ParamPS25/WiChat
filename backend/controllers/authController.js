@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/userSchema.js"
 import bcrypt from "bcryptjs"
+import cloudinary from "../lib/cloudinary.js";
 
 export const handleSignup = async (req, res) => {
     const {fullName,password,email} = req.body;
@@ -38,7 +39,7 @@ export const handleSignup = async (req, res) => {
             await newUser.save();
 
             res.status(200).json({
-                "success": true,
+                success : true,
                 user : newUser,
             });
         }
@@ -115,5 +116,54 @@ export const handleLogout = async (req,res) => {
             message: "Logout failed", 
             error: error.message 
         });
+    }
+}
+
+
+export const updateProfile = async(req,res) => {
+    try{
+        const {profilePic} = req.body;
+        const userId = req.user._id;
+
+        if(!profilePic){
+            res.status(400).json({ 
+            success: false, 
+            message: "Profile Picture required", 
+        });
+
+        const uploadResponse = await cloudinary.uploader.upload(profilePic);
+
+        const updatedUser = await User.findByIdAndUpdate(userId,{
+            profilePic : uploadResponse.secure_url
+        },{
+            new : true
+        });
+
+        res.status(200).json({
+            updatedUser
+        })
+        }
+    } catch (error) {
+        console.error("error in updating profile picture : ", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "failed to update profile Picture", 
+            error: error.message 
+        });
+    }
+}
+
+
+export const checkAuth = async (req,res) => {
+    try{
+        res.status(200).json({
+            user : req.user
+        })
+    } catch (err){
+        console.log("error : ", err)
+        res.status(500).json({
+            success : false,
+            message : "Internal server error"
+        })
     }
 }
