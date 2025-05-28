@@ -8,7 +8,7 @@ import { LuEyeOff } from "react-icons/lu";
 
 import { useAuthStore } from '../store/useAuthStore';
 import Loader from '../components/ui/Loader';
-import RightStyle from '../components/ui/Pattern';
+
 import { Link } from 'react-router-dom';
 import Pattern from '../components/ui/Pattern';
 import toast from 'react-hot-toast';
@@ -17,19 +17,20 @@ const SignUpPage = () => {
 
   const { signup, isSigningUp } = useAuthStore();
 
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
+    fullName: '',
     email: '',
     password: '',
   });
 
   const validateForm = () => {
-    const { username, email, password } = formData;
-    if (!username || !email || !password) {
+    const { fullName, email, password } = formData;
+    if (!fullName || !email || !password) {
       return { valid: false, message: "All fields are required" };
     }
-    if (username.length < 3 || username.length > 20) {
+    if (fullName.length < 3 || fullName.length > 20) {
       return { valid: false, message: "Username must be between 3 and 20 characters" };
     }
     if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
@@ -52,13 +53,19 @@ const SignUpPage = () => {
 
     await signup(formData);
     setFormData({
-      username: '',
+      fullName: '',
       email: '',
       password: '',
     });
   }
 
-
+  if (isSigningUp) {
+    return (
+      <div className='flex justify-center items-center h-screen'>
+        <Loader />
+      </div>
+    )
+  }
 
   return (
     <div className='min-h-screen grid lg:grid-cols-2'>
@@ -81,8 +88,8 @@ const SignUpPage = () => {
               <LuUser className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500' />
               <input
                 type='text'
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 className='w-full p-2 border rounded bg-transparent pl-10'
                 required
                 placeholder='Jhon Doe'
@@ -114,6 +121,7 @@ const SignUpPage = () => {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className='w-full p-2 border rounded bg-transparent'
                 required
+                placeholder='••••••••••'
               />
               {showPassword ? <LuEye className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer'
                 onClick={() => setShowPassword(!showPassword)}
@@ -129,12 +137,7 @@ const SignUpPage = () => {
             disabled={isSigningUp}
             className="w-full bg-blue-500 p-2 rounded font-semibold hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSigningUp ? (
-              <Loader
-                className='w-2 h-2 mx-auto'
-              />) : (
-              "Sign Up"
-            )}
+              Sign Up
           </button>
         </form>
 
