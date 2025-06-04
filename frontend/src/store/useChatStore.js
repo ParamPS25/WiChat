@@ -1,15 +1,15 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { axiosInstance } from '../lib/axios';
 
-export const useChatStore = create((set)=> ({
-    messages : [],
+export const useChatStore = create((set, get) => ({
+    messages: [],
     users: [],
-    selectedUsers: null,
+    selectedUser: null,
     isUserLoading: false,
     isMessagesLoading: false,
 
-    getUsers : async () => {
+    getUsers: async () => {
         set({ isUserLoading: true });
         try {
             const res = await axiosInstance.get('/messages/users');
@@ -26,7 +26,7 @@ export const useChatStore = create((set)=> ({
 
     getMessages: async (userId) => {
         set({ isMessagesLoading: true });
-        try{
+        try {
             const res = await axiosInstance.get(`/messages/${userId}`);
             if (res.data.success) {
                 set({ messages: res.data.messages });
@@ -39,7 +39,23 @@ export const useChatStore = create((set)=> ({
         }
     },
 
-    setSelectedUsers: (users) => {
-        set({ selectedUsers: users });
+    sendMessage: async (messageData) => {
+        const { selectedUser, messages } = get();
+        try {
+            const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
+            if (res.data.success) {
+                const newMessage = res.data.data;
+                set({ messages: [...messages, newMessage] });   // keep previous messages and add the new one
+                toast.success('Message sent successfully!');    
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            toast.error(error.response?.data?.message || 'Failed to send message.');
+        }
+    },
+
+    setSelectedUser: (users) => {
+        // console.log("Setting selected user:", users);
+        set({ selectedUser: users });
     },
 }))
