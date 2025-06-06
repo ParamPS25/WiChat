@@ -9,7 +9,8 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js'
 import messageRoutes from './routes/messageRoutes.js'
 
-const app = express();
+import { app, server } from './lib/socket.js';
+
 const PORT = process.env.PORT || 8000
 
 app.use(cors({
@@ -32,6 +33,6 @@ mongoose.connect(process.env.MONGO_URI)
 app.use("/api/auth" , authRoutes);
 app.use("/api/messages" , messageRoutes);
 
-app.listen(PORT , () => {
+server.listen(PORT , () => {
     console.log(`Server running on ${PORT}`)
 })

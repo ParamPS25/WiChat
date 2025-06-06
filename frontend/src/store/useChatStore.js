@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import { axiosInstance } from '../lib/axios';
+import { useAuthStore } from './useAuthStore';
 
 export const useChatStore = create((set, get) => ({
     messages: [],
@@ -52,6 +53,33 @@ export const useChatStore = create((set, get) => ({
             console.error('Error sending message:', error);
             toast.error(error.response?.data?.message || 'Failed to send message.');
         }
+    },
+
+
+    // (fixed) bug :- when a is sending to b and b has opened d than a msg will reflected from d due to loose checking of selectedUser from sidebar
+    subscribeToMessages : () => {
+        const {selectedUser} = get()
+        if(!selectedUser){
+            return;
+        }
+
+        const socket = useAuthStore.getState().socket;
+
+        socket.on("newMessage", (newMsg) => {
+            const isMessageSentFromSelectedUser = selectedUser._id === newMsg.senderId;
+            if(!isMessageSentFromSelectedUser){
+                return;
+            }
+            
+            set({
+                messages : [...get().messages , newMsg]     // append new msgs to prev ones
+            })
+        })
+    },
+
+    unsubscribeFromMessages : () => {
+        const socket = useAuthStore.getState().socket;
+        socket.off("newMessage")
     },
 
     setSelectedUser: (users) => {
