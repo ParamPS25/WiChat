@@ -62,7 +62,7 @@ export const sendMessage = async (req, res) => {
         const senderId = req.user._id;
 
         let imageUrl;
-        if(image){
+        if (image) {
             const uploadResponse = await cloudinary.uploader.upload(image)
             imageUrl = uploadResponse.secure_url; // Get the secure URL of the uploaded image
         }
@@ -76,9 +76,28 @@ export const sendMessage = async (req, res) => {
 
         await newMessage.save();
 
+        const unreadMessagesCount = await Message.countDocuments({
+            senderId,
+            receiverId,
+            status: { $ne: "read" },
+        });
+
+
+        // will emit newMessage to client with unread count
         const receiverSocketId = getReceiverSocketId(receiverId); // from params
-        if(receiverSocketId){
+        if (receiverSocketId) {
             io.to(receiverSocketId).emit("newMessage", newMessage);
+
+            io.to(receiverSocketId).emit("updateUnreadCount", {
+                from: senderId,
+                count: unreadMessagesCount,
+            });
+
+            console.log(`Sending updateUnreadCount to ${receiverSocketId}`, {
+                from: senderId,
+                count: unreadMessagesCount,
+            });
+
         }
 
         res.status(200).json({
@@ -95,7 +114,69 @@ export const sendMessage = async (req, res) => {
             error: "Failed to send message"
         });
     }
-    
-
 
 }
+
+
+// messages.controller.js
+export const getUnreadMessageCounts = async (req, res) => {
+    try {
+        const currentUserId = req.user._id;
+
+        const messages = await Message.aggregate([
+            { $match: { receiverId: currentUserId, status: { $ne: "read" } } },
+            {
+                $group: {
+                    _id: "$senderId",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+
+        const result = {};
+        messages.forEach(msg => {
+            result[msg._id] = msg.count;
+        });
+
+        res.json({ success: true, counts: result });
+
+    } catch (error) {
+        console.error("Error in getUnreadMessageCounts:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch unread counts" });
+    }
+};
+
+
+export const markMessagesAsRead = async (req, res) => {
+    const { id: senderId } = req.params;
+    const receiverId = req.user._id;
+
+    try {
+        await Message.updateMany(
+            {
+                senderId,
+                receiverId,
+                status: { $ne: "read" },
+            },
+            { $set: { status: "read" } }
+        );
+
+        // notify sender that their unread count on receiver is now 0
+        const senderSocketId = getReceiverSocketId(senderId);
+        if (senderSocketId) {
+            io.to(senderSocketId).emit("updateUnreadCount", {
+                from: receiverId,
+                count: 0,
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Messages marked as read"
+        });
+    } catch (err) {
+        console.error("Error marking messages as read:", err.message);
+        res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+};
