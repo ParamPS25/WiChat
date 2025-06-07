@@ -1,4 +1,4 @@
-import { React, useEffect } from 'react'
+import { React } from 'react'
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { IoCloseSharp } from "react-icons/io5";
@@ -8,10 +8,6 @@ const ChatHeader = () => {
 
   const { selectedUser, setSelectedUser } = useChatStore();
   const { onlineUsers } = useAuthStore();
-
-  useEffect(() => {
-    console.log('selectedUser:', selectedUser);
-  }, [selectedUser]);
 
   return (
     <div className='p-2.5 border-b border-base-300'>

@@ -64,7 +64,7 @@ const Sidebar = () => {
               ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
             `}
             >
-              <div className='flex p-3 gap-2'>
+              <div className='flex gap-2'>
                 <div className="relative mx-auto lg:mx-0">
                   <img
                     src={user.profilePic || "/default-avatar.jpeg"}
@@ -97,12 +97,12 @@ const Sidebar = () => {
                 </div>
               </div>
 
-
-              <div className='hidden lg:min-w-8 lg:rounded-full lg:bg-red-500 p-1'>
-                {unread && (
-                  <span className="badge">{unread}</span>
-                )}
-              </div>
+              {/* Desktop unread badge beside avatar */}
+              {unread > 0 && (
+                <div className='hidden lg:flex items-center justify-center min-w-8 rounded-full bg-red-500 p-1'>
+                  <span className=" text-content text-xs">{unread}</span>
+                </div>
+              )}
 
             </button>
           </div>
