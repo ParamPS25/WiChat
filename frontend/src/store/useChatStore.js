@@ -9,7 +9,15 @@ export const useChatStore = create((set, get) => ({
     selectedUser: null,
     isUserLoading: false,
     isMessagesLoading: false,
+    isLoadingOlderMessages: false,
     unreadCounts: {},
+    pagination: {
+        currentPage: 1,
+        hasNextPage: false,
+        totalPages: 0,
+        totalMessages: 0,
+        limit: 20
+    },
 
     getUsers: async () => {
         set({ isUserLoading: true });
@@ -26,20 +34,78 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    getMessages: async (userId) => {
-        set({ isMessagesLoading: true });
+    getMessages: async (userId, page = 1, resetMessages = true) => {
+        if (page === 1) {
+            set({ isMessagesLoading: true });
+        } else {
+            set({ isLoadingOlderMessages: true });
+        }
+
         try {
-            const res = await axiosInstance.get(`/messages/${userId}`);
+            const res = await axiosInstance.get(`/messages/${userId}?page=${page}&limit=20`);
             if (res.data.success) {
-                set({ messages: res.data.messages });
+                const newMessages = res.data.messages;
+                const paginationInfo = res.data.pagination;
+
+                if (resetMessages || page === 1) {
+                    // First load - replace all messages
+                    set({
+                        messages: newMessages,
+                        pagination: paginationInfo
+                    });
+                } else {
+                    // Loading older messages - merge and deduplicate
+                    const currentMessages = get().messages;
+                    const allMessages = [...newMessages, ...currentMessages];
+
+                    // Remove duplicates based on message ID
+                    const uniqueMessages = allMessages.filter((message, index, self) =>
+                        index === self.findIndex(m => m._id === message._id)
+                    );
+
+                    // Sort all messages by createdAt to ensure proper chronological order
+                    const sortedMessages = uniqueMessages.sort((a, b) =>
+                        new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+
+                    set({
+                        messages: sortedMessages,
+                        pagination: paginationInfo
+                    });
+                }
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
             toast.error(error.response?.data?.message || 'Failed to fetch messages.');
         } finally {
-            set({ isMessagesLoading: false });
+            set({
+                isMessagesLoading: false,
+                isLoadingOlderMessages: false
+            });
         }
     },
+
+    loadOlderMessages: async () => {
+        const { selectedUser, pagination, isLoadingOlderMessages } = get();
+
+        // console.log('loadOlderMessages called:', {
+        //     hasSelectedUser: !!selectedUser,
+        //     isLoading: isLoadingOlderMessages,
+        //     hasNextPage: pagination?.hasNextPage,
+        //     currentPage: pagination?.currentPage,
+        //     totalPages: pagination?.totalPages
+        // });
+
+        if (!selectedUser || isLoadingOlderMessages || !pagination?.hasNextPage) {
+            console.log('Skipping load - conditions not met');
+            return;
+        }
+
+        const nextPage = pagination.currentPage + 1;
+        // console.log('Loading page:', nextPage);
+        await get().getMessages(selectedUser._id, nextPage, false);
+    },
+
 
     sendMessage: async (messageData) => {
         const { selectedUser, messages } = get();
@@ -47,7 +113,18 @@ export const useChatStore = create((set, get) => ({
             const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
             if (res.data.success) {
                 const newMessage = res.data.data;
-                set({ messages: [...messages, newMessage] });
+
+                // Check if message already exists to prevent duplicates
+                const messageExists = messages.some(msg => msg._id === newMessage._id);
+
+                if (!messageExists) {
+                    // Add new message and sort to maintain chronological order
+                    const updatedMessages = [...messages, newMessage].sort((a, b) =>
+                        new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+
+                    set({ messages: updatedMessages });
+                }
                 toast.success('Message sent successfully!');
             }
         } catch (error) {
@@ -56,10 +133,10 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
+
     subscribeToMessages: () => {
-        // console.log("Setting up socket listeners");
         const socket = useAuthStore.getState().socket;
-        
+
         if (!socket) {
             console.error("Socket not available");
             return;
@@ -70,30 +147,31 @@ export const useChatStore = create((set, get) => ({
 
         // listen for new messages (this one changes based on selected user)
         socket.on("newMessage", (newMsg) => {
-            // console.log("Received newMessage:", newMsg);
-            const { selectedUser } = get();
-            
-            // Only add message if it's from the currently selected user
-            if (selectedUser && selectedUser._id === newMsg.senderId) {
-                set({
-                    messages: [...get().messages, newMsg],
-                });
-                
-                // Auto-mark as read if chat is open
+            const { selectedUser, messages } = get();
+
+            if (selectedUser && selectedUser._id === newMsg.senderId) {                 // Only add message if it's from the currently selected user
+                // Check if message already exists to prevent duplicates
+                const messageExists = messages.some(msg => msg._id === newMsg._id);
+
+                if (!messageExists) {
+                    // Add new message and sort to maintain chronological order
+                    const updatedMessages = [...messages, newMsg].sort((a, b) =>
+                        new Date(a.createdAt) - new Date(b.createdAt)
+                    );
+
+                    set({ messages: updatedMessages });
+                }
+
                 get().markMessagesAsRead(newMsg.senderId);
             }
         });
-
-        // console.log("Message listener set up successfully");
     },
 
     // Separate function for persistent listeners that should never be removed
     initializePersistentListeners: () => {
-        // console.log("Setting up persistent socket listeners");
         const socket = useAuthStore.getState().socket;
-        
+
         if (!socket) {
-            // console.error("Socket not available for persistent listeners");
             return;
         }
 
@@ -103,19 +181,15 @@ export const useChatStore = create((set, get) => ({
 
         // Listen for initial unread counts (when user connects) - PERSISTENT
         socket.on("initialUnreadCounts", (counts) => {
-            // console.log("Received initialUnreadCounts:", counts);
             set({ unreadCounts: counts });
         });
 
         // Listen for real-time unread count updates - PERSISTENT
         socket.on("updateUnreadCount", ({ from, count }) => {
-            // console.log("Received updateUnreadCount:", { from, count });
             const { selectedUser } = get();
-            
-            // Convert ObjectId to string for comparison
             const fromId = String(from);
-            
-            // Don't update count if user is currently chatting with this person
+
+            // ! IMP -> to skip update it user in active chat with that user
             if (selectedUser && String(selectedUser._id) === fromId) {
                 console.log("Skipping count update - user is in active chat with:", fromId);
                 return;
@@ -127,15 +201,11 @@ export const useChatStore = create((set, get) => ({
                     [fromId]: count,
                 },
             }));
-
-            // console.log("Updated unread counts for user:", fromId, "count:", count);
         });
-
-        // console.log("Persistent listeners set up successfully");
     },
 
+
     unsubscribeFromMessages: () => {
-        //console.log("Unsubscribing from newMessage only");
         const socket = useAuthStore.getState().socket;
         if (socket) {
             // Only remove newMessage listener, keep persistent ones
@@ -143,9 +213,8 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
-    // Complete cleanup for logout/unmount
+    // complete cleanup for logout/unmount
     cleanupAllListeners: () => {
-        // console.log("Cleaning up all socket listeners");
         const socket = useAuthStore.getState().socket;
         if (socket) {
             socket.off("newMessage");
@@ -154,32 +223,35 @@ export const useChatStore = create((set, get) => ({
         }
     },
 
+
     setSelectedUser: async (user) => {
-        // const previousUser = get().selectedUser;
-        // console.log("Setting selected user:", user?._id || 'null');
-        
-        set({ selectedUser: user });
-        
+        set({
+            selectedUser: user,
+            messages: [], // Clear messages when switching users
+            pagination: {
+                currentPage: 1,
+                hasNextPage: false,
+                totalPages: 0,
+                totalMessages: 0,
+                limit: 20
+            }
+        });
+
         if (user) {
-            // Mark messages as read when opening chat
-            await get().markMessagesAsRead(user._id);
-            // Set up message listener for this specific user
-            get().subscribeToMessages();
+            await get().markMessagesAsRead(user._id);       // mark messages as read -> when new selected user chat get opened
+            get().subscribeToMessages();                    // then sub to msgs
         } else {
-            // User closed chat - refresh unread counts after a delay
-            // console.log("User closed chat, refreshing unread counts");
             setTimeout(() => {
                 get().getUnreadCounts();
-            }, 500); // Increased delay to ensure backend updates are processed
+            }, 500);
         }
     },
 
+
     getUnreadCounts: async () => {
         try {
-            // console.log("Fetching unread counts from API");
             const res = await axiosInstance.get("/messages/unread-count");
             if (res.data.success) {
-                // console.log("Fetched unread counts:", res.data.counts);
                 set({ unreadCounts: res.data.counts });
             }
         } catch (error) {
@@ -191,16 +263,13 @@ export const useChatStore = create((set, get) => ({
     markMessagesAsRead: async (senderId) => {
         try {
             await axiosInstance.patch(`/messages/mark-read/${senderId}`);
-            
-            // Clear unread count for that sender locally
+
             set((state) => ({
                 unreadCounts: {
                     ...state.unreadCounts,
                     [senderId]: 0,
                 },
             }));
-
-            // console.log(`Marked messages as read for sender: ${senderId}`);
         } catch (err) {
             console.error("Failed to mark messages as read:", err);
         }

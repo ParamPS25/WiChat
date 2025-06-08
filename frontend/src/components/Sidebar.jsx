@@ -100,7 +100,7 @@ const Sidebar = () => {
               {/* Desktop unread badge beside avatar */}
               {unread > 0 && (
                 <div className='hidden lg:flex items-center justify-center min-w-8 rounded-full bg-red-500 p-1'>
-                  <span className=" text-content text-xs">{unread}</span>
+                  <span className=" text-content text-xs font-bold">{unread}</span>
                 </div>
               )}
 
