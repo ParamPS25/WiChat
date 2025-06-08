@@ -26,21 +26,50 @@ export const getUsersForSidebar = async (req, res) => {
 };
 
 export const getMessages = async (req, res) => {
-    const { id: userToChatId } = req.params; // id is the receiverId
+    const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
     try {
-        // Fetch messages between the sender and receiver
+        // Get total count for pagination info
+        const totalMessages = await Message.countDocuments({
+            $or: [
+                { senderId: myId, receiverId: userToChatId },
+                { senderId: userToChatId, receiverId: myId }
+            ]
+        });
+
+        const totalPages = Math.ceil(totalMessages / limit);
+        const hasNextPage = page < totalPages;
+
+        // Calculate skip from the END of messages (for reverse pagination)
+        const skipFromEnd = (page - 1) * limit;
+        const skipFromStart = Math.max(0, totalMessages - skipFromEnd - limit);
+        const actualLimit = Math.min(limit, totalMessages - skipFromEnd);
+
+        // Fetch messages with correct pagination logic
         const messages = await Message.find({
             $or: [
                 { senderId: myId, receiverId: userToChatId },
                 { senderId: userToChatId, receiverId: myId }
             ]
-        }).sort({ createdAt: 1 }); // Sort by creation time
+        })
+            .sort({ createdAt: 1 }) // Always sort chronologically (oldest first)
+            .skip(skipFromStart)
+            .limit(actualLimit);
 
         res.status(200).json({
             success: true,
-            messages
+            messages,
+            pagination: {
+                currentPage: page,
+                totalPages,
+                totalMessages,
+                hasNextPage,
+                limit
+            }
         });
 
     } catch (err) {
@@ -51,7 +80,8 @@ export const getMessages = async (req, res) => {
             error: "Failed to fetch messages"
         });
     }
-}
+};
+
 
 // message can be text or image
 export const sendMessage = async (req, res) => {
