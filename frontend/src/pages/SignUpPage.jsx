@@ -137,7 +137,7 @@ const SignUpPage = () => {
             disabled={isSigningUp}
             className="w-full bg-blue-500 p-2 rounded font-semibold hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
-              Sign Up
+            Sign Up
           </button>
         </form>
 
@@ -153,13 +153,23 @@ const SignUpPage = () => {
       </div>
 
       {/* Right side */}
-      <div className='hidden lg:flex pt-6 pr-6 justify-center items-center'>
-        <Pattern
+      <div className='hidden lg:flex flex-col justify-center items-center px-6'>
+        {/* <Pattern
           title={"Welcome to WiChat !"}
           message={"Connect with friends and the world around you on WiChat."}
           className="w-full h-full bg-cover bg-center"
+        /> */}
+        <img
+          src="/auth-pic.png"
+          alt='auth picture'
+          className='object-contain max-w-[500px] w-full h-auto mb-6'
         />
+        <h2 className='text-2xl text-green-600 font-bold mb-2'>Welcome to WiChat!</h2>
+        <p className='text-md text-blue-400 text-center max-w-sm'>
+          Connect with friends and the world around you on WiChat.
+        </p>
       </div>
+
 
     </div>
   )

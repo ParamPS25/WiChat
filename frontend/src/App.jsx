@@ -32,7 +32,6 @@ const App = () => {
   useEffect(() => {
     // initialize socket listeners when user is authenticated and socket is available
     if (authUser && socket) {
-      // console.log(" User authenticated and socket available, setting up listeners");
 
       // Get initial unread counts
       getUnreadCounts();

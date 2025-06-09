@@ -16,7 +16,7 @@ export const useChatStore = create((set, get) => ({
         hasNextPage: false,
         totalPages: 0,
         totalMessages: 0,
-        limit: 20
+        limit: 10
     },
 
     getUsers: async () => {
@@ -42,7 +42,7 @@ export const useChatStore = create((set, get) => ({
         }
 
         try {
-            const res = await axiosInstance.get(`/messages/${userId}?page=${page}&limit=20`);
+            const res = await axiosInstance.get(`/messages/${userId}?page=${page}&limit=10`);
             if (res.data.success) {
                 const newMessages = res.data.messages;
                 const paginationInfo = res.data.pagination;
@@ -233,7 +233,7 @@ export const useChatStore = create((set, get) => ({
                 hasNextPage: false,
                 totalPages: 0,
                 totalMessages: 0,
-                limit: 20
+                limit: 10
             }
         });
 

@@ -125,12 +125,21 @@ const LoginPage = () => {
       </div>
 
       {/* Right Side */}
-      <div className='hidden lg:flex pt-6 pr-6 justify-center items-center'>
-        <Pattern
+      <div className='hidden lg:flex flex-col justify-center items-center px-6'>
+        {/* <Pattern
           title={"Welcome Back to WiChat!"}
           message={"Connect again with your friends and the world around you."}
           className="w-full h-full bg-cover bg-center"
+        /> */}
+        <img
+          src="/auth-pic.png"
+          alt='auth picture'
+          className='object-contain max-w-[500px] w-full h-auto mb-6'
         />
+        <h2 className='text-2xl text-green-600 font-bold mb-2'>Welcome Back to WiChat!</h2>
+        <p className='text-md text-blue-400 text-center max-w-sm'>
+          Connect again with your friends and the world around you.
+        </p>
       </div>
     </div>
   );
