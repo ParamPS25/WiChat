@@ -97,6 +97,8 @@ export const useAuthStore = create((set, get) => ({
 
         // sending userId on handshake with backend
         const socket = io(BASE_URL, {
+            transports: ["websocket"],
+            withCredentials: true,
             query : {
                 userId : authUser._id,
             }
