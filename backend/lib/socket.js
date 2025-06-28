@@ -10,11 +10,18 @@ import Message from '../models/messageSchema.js';
 const app = express();
 const server = http.createServer(app);
 
+// const io = new Server(server, {
+//     cors: {
+//         origin: [process.env.CLIENT_URL],
+//         credentials: true,
+//     }
+// });
+
 const io = new Server(server, {
-    cors: {
-        origin: [process.env.CLIENT_URL],
-        credentials: true,
-    }
+  cors: {
+    origin: true, // allow same-origin requests dynamically
+    credentials: true,
+  },
 });
 
 
