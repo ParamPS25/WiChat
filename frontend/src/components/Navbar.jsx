@@ -27,7 +27,7 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 md:gap-4'>
             <Link to='/settings'
               className='btn btn-sm gap-2 transition-colors'
             >
