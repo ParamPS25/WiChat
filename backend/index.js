@@ -15,29 +15,36 @@ const PORT = process.env.PORT || 8000;
 const __dirname = path.resolve();
 
 // CORS configuration
-const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, etc.)
-        if (!origin) return callback(null, true);
+// const corsOptions = {
+//     origin: function (origin, callback) {
+//         // Allow requests with no origin (mobile apps, etc.)
+//         if (!origin) return callback(null, true);
         
-        const allowedOrigins = [
-            process.env.CLIENT_URL,
-            'http://localhost:3000',
-            'http://localhost:5173'
-        ].filter(Boolean);
+//         const allowedOrigins = [
+//             process.env.CLIENT_URL,
+//             'http://localhost:3000',
+//             'http://localhost:5173'
+//         ].filter(Boolean);
         
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+//         if (allowedOrigins.includes(origin)) {
+//             callback(null, true);
+//         } else {
+//             callback(new Error('Not allowed by CORS'));
+//         }
+//     },
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+// };
+
+// app.use(cors(corsOptions));
+
+app.use(cors({
+    origin: true, // Allow all origins since serving from a same domain in production
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-};
-
-app.use(cors(corsOptions));
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'] 
+}));
 
 // Middleware
 app.use(cookieParser());
