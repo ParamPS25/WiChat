@@ -32,6 +32,11 @@ mongoose.connect(process.env.MONGO_URI)
         console.log("eroor connecting to MongoDB" , err);
     })
 
+
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
+
 app.use("/api/auth" , authRoutes);
 app.use("/api/messages" , messageRoutes);
 
