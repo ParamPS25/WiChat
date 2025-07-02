@@ -39,79 +39,64 @@ const Sidebar = () => {
             />
             <span className="text-sm">show online only</span>
           </label>
-          <span className="text-xs text-zinc-500">({(onlineUsers.length)} online)</span>
+          <span className="text-xs text-zinc-500">({onlineUsers.length} online)</span>
         </div>
       </div>
 
-      {/* contacts list */}
-      {filteredUsers.map((user) => {
+      {/* scrollable user list */}
+      <div className="flex-grow overflow-y-auto">
+        {filteredUsers.map((user) => {
+          const unread = unreadCounts[user._id.toString()] || 0;
 
-        const unread = unreadCounts[user._id.toString()] || 0;
-
-        return (
-
-          <div
-            className='flex items-center justify-end'
-            key={user._id}
-          >
-
-            <button
-              key={user._id}
-              onClick={() => setSelectedUser(user)}
-              className={`
+          return (
+            <div className='flex items-center justify-end' key={user._id}>
+              <button
+                onClick={() => setSelectedUser(user)}
+                className={`
               w-full p-3 flex items-center justify-between gap-3
               hover:bg-base-300 transition-colors
               ${selectedUser?._id === user._id ? "bg-base-300 ring-1 ring-base-300" : ""}
             `}
-            >
-              <div className='flex gap-2'>
-                <div className="relative mx-auto lg:mx-0">
-                  <img
-                    src={user.profilePic || "/default-avatar.jpeg"}
-                    alt={user.name}
-                    className="size-12 object-cover rounded-full"
-                  />
-
-                  {/* online dot */}
-                  {onlineUsers.includes(user._id) && (
-                    <span
-                      className="absolute bottom-0 right-0 size-3 bg-green-500 
-                  rounded-full ring-2 ring-zinc-900"
+              >
+                <div className='flex gap-2'>
+                  <div className="relative mx-auto lg:mx-0">
+                    <img
+                      src={user.profilePic || "/default-avatar.jpeg"}
+                      alt={user.name}
+                      className="size-12 object-cover rounded-full"
                     />
-                  )}
+                    {onlineUsers.includes(user._id) && (
+                      <span className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-zinc-900" />
+                    )}
+                    {unread > 0 && (
+                      <span className="lg:hidden absolute -top-1 -right-1 badge badge-sm badge-primary">
+                        {unread}
+                      </span>
+                    )}
+                  </div>
 
-                  {/* Unread badge on avatar (mobile only) */}
-                  {unread > 0 && (
-                    <span className="lg:hidden absolute -top-1 -right-1 badge badge-sm badge-primary">
-                      {unread}
-                    </span>
-                  )}
-                </div>
-
-                {/* User info - only visible on larger screens */}
-                <div className="hidden lg:block text-left min-w-0">
-                  <div className="font-medium truncate">{user.fullName}</div>
-                  <div className="text-sm text-zinc-400">
-                    {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                  <div className="hidden lg:block text-left min-w-0">
+                    <div className="font-medium truncate">{user.fullName}</div>
+                    <div className="text-sm text-zinc-400">
+                      {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Desktop unread badge beside avatar */}
-              {unread > 0 && (
-                <div className='hidden lg:flex items-center justify-center min-w-8 rounded-full bg-red-500 p-1'>
-                  <span className=" text-content text-xs font-bold">{unread}</span>
-                </div>
-              )}
+                {unread > 0 && (
+                  <div className='hidden lg:flex items-center justify-center min-w-8 rounded-full bg-red-500 p-1'>
+                    <span className="text-content text-xs font-bold">{unread}</span>
+                  </div>
+                )}
+              </button>
+            </div>
+          );
+        })}
 
-            </button>
-          </div>
-        )
-      })}
-
-      {filteredUsers.length === 0 && (
-        <div className="text-center text-zinc-500 py-4">No online users</div>
-      )}
+        {filteredUsers.length === 0 && (
+          <div className="text-center text-zinc-500 py-4">No online users</div>
+        )}
+      </div>
     </aside>
   );
 };
